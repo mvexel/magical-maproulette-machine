@@ -1,0 +1,6 @@
+[submodule "overpass-api-python-wrapper"]
+	path = overpass-api-python-wrapper
+	url = git@github.com:mvexel/overpass-api-python-wrapper.git
+[submodule "overpass"]
+	path = overpass
+	url = git@github.com:mvexel/overpass-api-python-wrapper.git
