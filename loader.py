@@ -4,6 +4,25 @@ from urlparse import urljoin
 import json
 import requests
 import sys
+import yaml
+import argparse
+import os
+from voluptuous import Schema, Required
+
+# the schema for the config file
+config_schema = Schema({
+    'challenge': {
+        Required('slug'): str,
+        Required('title'): str,
+        'blurb': str,
+        'description': str,
+        'help': str,
+        Required('instruction'): str,
+        'difficulty': int},
+    Required('overpass_query'): str,
+    Required('maproulette_server'): str
+})
+
 
 # this holds the challenge data
 challenge = {}
@@ -12,18 +31,49 @@ challenge = {}
 tasks_geojson = ""
 
 # are we creating or updating?
-update = False
+update = True
 
 # are we testing?
 testing = False
 
-# server to talk to
-server = "http://localhost:5000/" if testing else "http://dev.maproulette.org/"
+# are we in interactive mode?
+interactive = False
+
+config = {
+    'challenge': {
+        'difficulty': 2,
+        'description': "Lots of businesses are in OSM but don't have opening hours.",
+        'title': 'Businesses without Opening Hours',
+        'instruction': 'Look up the opening hours on the business web site and add an `opening_hours` tag to the node',
+        'slug': 'business-no-hours',
+        'blurb': 'Add opening hours to shops and restaurants',
+        'help': 'Look up the opening hours on the business web site and add an `opening_hours` tag to the node'},
+    'maproulette_server': 'http://dev.maproulette.org/',
+    'overpass_query': 'node(40.5,-112.2,40.8,-111.7)[amenity~"shop|restaurant"][opening_hours!~"."]'}
+
+# endpoints
+server = ""
 challenge_endpoint = ""
 tasks_endpoint = ""
 
 # add'l headers for request
 headers = {'content-type': 'application/json'}  # json header
+
+
+def process_config_file(path):
+    global config
+    try:
+        with open(path, 'rb') as stream:
+            config = yaml.load(stream)
+            try:
+                config_schema(config)
+            except Exception, e:
+                raise e
+            if testing:
+                print(config)
+    except Exception:
+        raise
+    choose_server()
 
 
 def display_help_text():
@@ -34,6 +84,7 @@ from an Overpass QL query. Pretty neat.
 This is the interactive mode. That's all we have for now,
 so just follow along.
 """)
+    prompt()
 
 
 def prompt(prompt="Press enter to continue", default=None):
@@ -44,6 +95,8 @@ def prompt(prompt="Press enter to continue", default=None):
 
 
 def get_challenge_meta():
+    challenge_defaults = config['challenge']
+
     print("""
 OK, first we will need to collect some challenge metadata.
 You can find out more about the meaning of these various bits in the MapRoulette
@@ -55,71 +108,89 @@ businesses without opening hours around Salt Lake City, Utah, USA.
     # ask for slug,
     challenge["slug"] = prompt(
         "Challenge slug",
-        default="business-no-hours")
+        default=challenge_defaults['slug'])
     #title,
     challenge["title"] = prompt(
         "Challenge title",
-        default="Businesses without Opening Hours")
+        default=challenge_defaults['title'])
     #blurb,
     challenge["blurb"] = prompt(
         "Challenge blurb (optional)",
-        default="Add opening hours to shops and restaurants")
+        default=challenge_defaults['blurb'])
     #description,
     challenge["description"] = prompt(
         "Challenge description (optional)",
-        default="Lots of businesses are in OSM but don't have opening hours.")
+        default=challenge_defaults['description'])
     #help,
     challenge["help"] = prompt(
         "Challenge help (optional)",
-        default="Look up the opening hours on the business web site and add an `opening_hours` tag to the node")
+        default=challenge_defaults['help'])
     #instruction,
     challenge["instruction"] = prompt(
         "Challenge instruction",
-        default="Look up the opening hours on the business web site and add an `opening_hours` tag to the node")
+        default=challenge_defaults['instruction'])
     #difficulty
     challenge["difficulty"] = prompt(
         "Challenge difficulty (1=easy, 2=medium, 3=hard)",
-        default=2)
+        default=challenge_defaults['difficulty'])
 
 
 def choose_server():
-    global server
     global challenge_endpoint
     global tasks_endpoint
+    global server
 
-    server = prompt("Which MapRoulette server shall we use?", default=server)
-    challenge_endpoint = urljoin(server, "/api/admin/challenge/{slug}".format(slug=challenge["slug"]))
-    tasks_endpoint = urljoin(server, "/api/admin/challenge/{slug}/tasks?geojson".format(slug=challenge["slug"]))
+    if interactive:
+        server = prompt("Which MapRoulette server shall we use?", default=config.get('maproulette_server'))
+    else:
+        server = config.get('maproulette_server')
+    challenge_endpoint = urljoin(server, "/api/admin/challenge/{slug}".format(slug=config['challenge']['slug']))
+    tasks_endpoint = urljoin(server, "/api/admin/challenge/{slug}/tasks?geojson".format(slug=config['challenge']['slug']))
 
 
 def create_or_update_challenge():
     print("We will {createorupdate} your challenge {slug}".format(
         createorupdate="update" if update else "create",
-        slug=challenge["slug"]))
+        slug=config['challenge']['slug']))
+    if testing:
+        print("going to {} at {}".format(("update" if update else "create"), challenge_endpoint))
     if update:
-        response = requests.put(challenge_endpoint, data=json.dumps(challenge), headers=headers)
+        response = requests.put(challenge_endpoint, data=json.dumps(config['challenge']), headers=headers)
     else:
-        response = requests.post(challenge_endpoint, data=json.dumps(challenge), headers=headers)
+        response = requests.post(challenge_endpoint, data=json.dumps(config['challenge']), headers=headers)
     eval_response(response)
     return
 
 
 def get_tasks_from_overpass():
+    """Get the geoJSON with the OSM features that should
+    become tasks from the Overpass API.
+
+    Uses the provided `overpass_query` from the config file
+    if provided, or asks for query input in interactive mode"""
+
     global tasks_geojson
     import overpass
     print("Now let's collect your tasks.")
-    overpass_query = prompt(
-        "Input the overpass query stub that returns the OSM objects you want fixed",
-        default="""node(40.5,-112.2,40.8,-111.7)[amenity~"shop|restaurant"][opening_hours!~"."]""")
+    if interactive:
+        overpass_query = prompt(
+            "Input the overpass query stub that returns the OSM objects you want fixed",
+            default=config['overpass_query'])
+    else:
+        overpass_query = config['overpass_query']
     api = overpass.API()
     tasks_geojson = api.get(overpass_query, asGeoJSON=True)
     if testing:
         print(tasks_geojson)
-    prompt("Your query returned {num} tasks. Press Enter to continue and post these tasks.".format(
+    print("Your query returned {num} tasks.".format(
         num=len(tasks_geojson['features'])))
+    if interactive:
+        prompt('Press Enter to continue and post these tasks.')
 
 
 def post_tasks():
+    """Posts the tasks to the MapRoulette server"""
+
     if update:
         print("Updating tasks...")
         response = requests.put(tasks_endpoint, data=json.dumps(tasks_geojson), headers=headers)
@@ -131,6 +202,8 @@ def post_tasks():
 
 
 def activate_challenge():
+    """Activates the challenge in the MapRoulette server"""
+
     print("Activating your challenge now...")
     challenge["active"] = True
     response = requests.put(challenge_endpoint, data=json.dumps(challenge), headers=headers)
@@ -138,6 +211,10 @@ def activate_challenge():
 
 
 def eval_response(response):
+    """Evaluates the HTTP response from the server.
+    Anything that is not a 2XX response code is considered
+    an error and will cause an exception to be raised."""
+
     if not str(response.status_code).startswith("2"):
         print("something went wrong with this request and we got an HTTP status code {status_code} back".format(
             status_code=response.status_code))
@@ -146,19 +223,70 @@ def eval_response(response):
         print("That went A-OK")
 
 
-def main():
-    interactive = True  # interactive is all we have for now.
-    global update
+def send_to_server():
+    """Convenience function to create or update the challenge,
+    collect GeoJSON from Overpass, post tasks and activate the
+    challenge."""
 
-    if testing:
-        print("Testing...")
+    # create or update the challenge
+    create_or_update_challenge()
+
+    # now collect the tasks
+    get_tasks_from_overpass()
+
+    # post!
+    post_tasks()
+
+    # activate the challenge
+    activate_challenge()
+
+
+def finalize():
+    """Outputs a confirmation and goodbye message"""
+
+    print("\nHey that went well. You should now be able to check out your challenge at {url}".format(
+        url=urljoin(server, "#t={slug}".format(slug=config['challenge']['slug']))))
+    sys.exit(0)
+
+
+def main():
+    """Main loop"""
+
+    global update
+    global interactive
+
+    # parse the optional config file argument
+    parser = argparse.ArgumentParser(
+        description="The Magic MapRoulette Machine")
+    parser.add_argument(
+        '--new',
+        help='Create a new challenge? If omitted we will try to update an existing challenge.',
+        action='store_false')
+    parser.add_argument(
+        "config_file",
+        help="YAML config file. If omitted, we will use interactive mode.",
+        metavar="CONFIG_FILE",
+        type=str,
+        nargs="?")
+    parser.set_defaults(update=True)
+
+    args = parser.parse_args()
+    update = args.new
+    if args.config_file and os.path.isfile(args.config_file):
+        # process the config file
+        process_config_file(args.config_file)
+
+        # then update challenge
+        send_to_server()
+
+        # finalize
+        finalize()
+    else:
+        interactive = True
 
     if interactive:
         # display help text
         display_help_text()
-
-        # prompt to continue
-        prompt()
 
         # get challenge metadata
         get_challenge_meta()
@@ -169,20 +297,11 @@ def main():
         # is this going to be a new or existing challenge?
         update = prompt("Will this be a new challenge? (y/n)", default="n") != "y"
 
-        # create or update the challenge
-        create_or_update_challenge()
+        # send everything to the server
+        send_to_server()
 
-        # now collect the tasks
-        get_tasks_from_overpass()
-
-        # post!
-        post_tasks()
-
-        # activate the challenge
-        activate_challenge()
-
-        print("\nHey that went well. You should now be able to check out your challenge at {url}".format(
-            url=urljoin(server, "#t={slug}".format(slug=challenge["slug"]))))
+        # finalize
+        finalize()
 
 if __name__ == '__main__':
     main()
