@@ -1,5 +1,5 @@
-maproulette-overpass-loader
-===========================
+Magic MapRoulette Machine
+=========================
 
 An interactive Challenge loader script for MapRoulette - create or maintain a challenge with just an Overpass query!
 
