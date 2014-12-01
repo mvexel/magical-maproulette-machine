@@ -33,8 +33,8 @@ tasks_geojson = ""
 # are we creating or updating?
 update = True
 
-# are we testing?
-testing = False
+# should we be verbose?
+verbose = False
 
 # are we in interactive mode?
 interactive = False
@@ -72,20 +72,25 @@ def process_config_file(path):
                 config_schema(config)
             except Exception, e:
                 raise e
-            if testing:
-                print(config)
+            if verbose:
+                print("configuration read in: \n {}".format(config))
+        print("Config file read successfully, continuing to post challenge and tasks...\n")
     except Exception:
         raise
     choose_server()
 
 
 def display_help_text():
-    print("""Hey. This is the magic MapRoulette Machine.
-It lets you magically create a real MapRoulette challenge
-from an Overpass QL query. Pretty neat.
+    print("""Your query needs to be formulated in Overpass QL.
+If you are not familiar with this language, head over to the
+Language Guide at http://bit.ly/overpass-ql-guide or the
+Language Reference at http://bit.ly/overpass-ql-ref. To test
+your queries, use Overpass Turbo at http://overpass-turbo.eu/
 
-This is the interactive mode. That's all we have for now,
-so just follow along.
+This is the interactive mode. It will guide you through the
+entire process step by step. There is also a 'headless' mode
+that requires no user intervention, and uses a config file
+instead. Invoke the Machine with the --h switch to learn more.
 """)
     prompt()
 
@@ -155,7 +160,7 @@ def create_or_update_challenge():
     print("We will {createorupdate} your challenge {slug}".format(
         createorupdate="update" if update else "create",
         slug=config['challenge']['slug']))
-    if testing:
+    if verbose:
         print("going to {} at {}".format(("update" if update else "create"), challenge_endpoint))
     if update:
         response = requests.put(challenge_endpoint, data=json.dumps(config['challenge']), headers=headers)
@@ -188,9 +193,10 @@ def get_tasks_from_overpass():
     api = overpass.API()
     tasks_geojson = api.get(overpass_query, asGeoJSON=True)
 
-    if testing:
-        print(tasks_geojson)
+    if verbose:
+        print("GeoJSON returned:\n{}".format(tasks_geojson))
 
+    # if the geojson has no features, give the opportunity to retry.
     if not "features" in tasks_geojson:
         if prompt("The Overpass query did not return any features. Would you like to try again?") == "y":
             get_tasks_from_overpass()
@@ -257,15 +263,16 @@ def send_to_server():
         # activate the challenge
         activate_challenge()
     else:
-        print("""\nThis is where we would post your challenge to
-MapRoulette, but this is a dry run so we won't""")
+        print("\nThis is where we would post your challenge to MapRoulette, but this is a dry run so we won't.")
 
 
 def finalize():
     """Outputs a confirmation and goodbye message"""
 
-    print("\nHey that went well. You should now be able to check out your challenge at {url}".format(
-        url=urljoin(server, "#t={slug}".format(slug=config['challenge']['slug']))))
+    if not dryrun:
+        print("\nHey that went well!\nYou should now be able to check out your challenge at:\n{url}".format(
+            url=urljoin(server, "#t={slug}".format(slug=config['challenge']['slug']))))
+    print("\nAll done!")
     sys.exit(0)
 
 
@@ -274,38 +281,56 @@ def main():
 
     global update
     global dryrun
+    global verbose
     global interactive
 
-    # parse the optional config file argument
+    # welcome!
+    print("""
+Hey! This is the Magic MapRoulette Machine.
+
+It lets you magically create a real MapRoulette challenge
+from an Overpass query. Pretty neat.
+""")
+
+    # parse the arguments on the left hand side
     parser = argparse.ArgumentParser(
         description="The Magic MapRoulette Machine")
     parser.add_argument(
         "--new",
-        help='Create a new challenge? If omitted we will try to update an existing challenge.')
+        help="Create a new challenge? If omitted we will try to update an existing challenge.",
+        action="store_false")
+    parser.add_argument(
+        "--v", "--verbose",
+        dest="verbose",
+        help="Verbose output",
+        action="store_true")
     parser.add_argument(
         "--dry-run",
         dest="dryrun",
-        help="Do not actually post anything")
+        help="Do not actually post anything",
+        action="store_true")
     parser.add_argument(
         "config_file",
         help="YAML config file. If omitted, we will use interactive mode.",
         metavar="CONFIG_FILE",
         type=str,
         nargs="?")
-    parser.set_defaults(update=True, dryrun=True)
+    parser.set_defaults(new=False, dryrun=False, verbose=False)
 
     args = parser.parse_args()
 
-    if testing:
-        print args
-
     # store new / update
-    if "new" in args:
+    if args.new:
         update = False
 
     # store dry run
-    if "dryrun" in args:
+    if args.dryrun:
         dryrun = True
+
+    # store verbose
+    if args.verbose:
+        verbose = True
+        print("Arguments passed:\n{}".format(args))
 
     if args.config_file and os.path.isfile(args.config_file):
         # process the config file
