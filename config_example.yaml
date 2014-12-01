@@ -1,10 +1,10 @@
 challenge:
-  slug: 'business-no-hours'
-  title: 'Businesses without Opening Hours'
-  blurb: 'Add opening hours to shops and restaurants'
-  description: 'Lots of businesses are in OSM but don''t have opening hours.'
-  help: 'Look up the opening hours on the business web site and add an `opening_hours` tag to the node'
-  instruction: 'Look up the opening hours on the business web site and add an `opening_hours` tag to the node'
-  difficulty: 2
-overpass_query: 'node(40.5,-112.2,40.8,-111.7)[amenity~"shop|restaurant"][opening_hours!~"."]'
-maproulette_server: 'http://dev.maproulette.org/'
+  slug: 'business-no-hours' # required
+  title: 'Businesses without Opening Hours' # required
+  blurb: 'Add opening hours to shops and restaurants' # optional
+  description: 'Lots of businesses are in OSM but don''t have opening hours.' # optional
+  help: 'Look up the opening hours on the business web site and add an `opening_hours` tag to the node' # optional
+  instruction: 'Look up the opening hours on the business web site and add an `opening_hours` tag to the node' # required
+  difficulty: 2 # required, 1 = easy, 2 = medium, 3 = hard
+overpass_query: 'node(40.5,-112.2,40.8,-111.7)[amenity~"shop|restaurant"][opening_hours!~"."]' # required. An overpass query QL stub (without the out statements)
+maproulette_server: 'http://dev.maproulette.org/' # required

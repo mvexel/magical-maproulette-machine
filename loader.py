@@ -39,6 +39,9 @@ testing = False
 # are we in interactive mode?
 interactive = False
 
+# are we dry-runnning?
+dryrun = False
+
 config = {
     'challenge': {
         'difficulty': 2,
@@ -169,21 +172,34 @@ def get_tasks_from_overpass():
     Uses the provided `overpass_query` from the config file
     if provided, or asks for query input in interactive mode"""
 
-    global tasks_geojson
     import overpass
+
+    global tasks_geojson
+
     print("Now let's collect your tasks.")
+
     if interactive:
         overpass_query = prompt(
             "Input the overpass query stub that returns the OSM objects you want fixed",
             default=config['overpass_query'])
     else:
         overpass_query = config['overpass_query']
+
     api = overpass.API()
     tasks_geojson = api.get(overpass_query, asGeoJSON=True)
+
     if testing:
         print(tasks_geojson)
+
+    if not "features" in tasks_geojson:
+        if prompt("The Overpass query did not return any features. Would you like to try again?") == "y":
+            get_tasks_from_overpass()
+        exit(1)
+
+    num_tasks = len(tasks_geojson['features'])
+
     print("Your query returned {num} tasks.".format(
-        num=len(tasks_geojson['features'])))
+        num=num_tasks))
     if interactive:
         prompt('Press Enter to continue and post these tasks.')
 
@@ -228,17 +244,21 @@ def send_to_server():
     collect GeoJSON from Overpass, post tasks and activate the
     challenge."""
 
-    # create or update the challenge
-    create_or_update_challenge()
+    if not dryrun:
+        # create or update the challenge
+        create_or_update_challenge()
 
-    # now collect the tasks
-    get_tasks_from_overpass()
+        # now collect the tasks
+        get_tasks_from_overpass()
 
-    # post!
-    post_tasks()
+        # post!
+        post_tasks()
 
-    # activate the challenge
-    activate_challenge()
+        # activate the challenge
+        activate_challenge()
+    else:
+        print("""\nThis is where we would post your challenge to
+MapRoulette, but this is a dry run so we won't""")
 
 
 def finalize():
@@ -253,25 +273,40 @@ def main():
     """Main loop"""
 
     global update
+    global dryrun
     global interactive
 
     # parse the optional config file argument
     parser = argparse.ArgumentParser(
         description="The Magic MapRoulette Machine")
     parser.add_argument(
-        '--new',
-        help='Create a new challenge? If omitted we will try to update an existing challenge.',
-        action='store_false')
+        "--new",
+        help='Create a new challenge? If omitted we will try to update an existing challenge.')
+    parser.add_argument(
+        "--dry-run",
+        dest="dryrun",
+        help="Do not actually post anything")
     parser.add_argument(
         "config_file",
         help="YAML config file. If omitted, we will use interactive mode.",
         metavar="CONFIG_FILE",
         type=str,
         nargs="?")
-    parser.set_defaults(update=True)
+    parser.set_defaults(update=True, dryrun=True)
 
     args = parser.parse_args()
-    update = args.new
+
+    if testing:
+        print args
+
+    # store new / update
+    if "new" in args:
+        update = False
+
+    # store dry run
+    if "dryrun" in args:
+        dryrun = True
+
     if args.config_file and os.path.isfile(args.config_file):
         # process the config file
         process_config_file(args.config_file)
