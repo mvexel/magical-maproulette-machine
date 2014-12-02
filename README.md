@@ -5,9 +5,18 @@ An interactive Challenge loader script for MapRoulette - create or maintain a ch
 
 ## Install it
 
-You will need to install the requirements.
+First, clone this repository:
 
-`pip install -r requirements.txt`
+```shell
+git clone https://github.com/mvexel/magical-maproulette-machine.git
+```
+
+Then, move into the directory, and install the requirements.
+
+```shell
+cd magical-maproulette-machine
+pip install -r requirements.txt
+```
 
 These are pretty modest but the `overpass` requirement will still fail. This is because I am lazy and have not committed the Overpass Python wrapper to PyPi yet. For now you will need to head to [its project page](https://github.com/mvexel/overpass-api-python-wrapper), clone the repo and `python setup.py install` it.
 
