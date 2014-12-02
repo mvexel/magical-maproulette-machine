@@ -286,15 +286,15 @@ def main():
 
     # welcome!
     print("""
-Hey! This is the Magic MapRoulette Machine.
+Hey! This is the Magical MapRoulette Machine.
 
-It lets you magically create a real MapRoulette challenge
-from an Overpass query. Pretty neat.
+It lets you create a real MapRoulette challenge
+from an Overpass query. Pretty neat. Magical!
 """)
 
     # parse the arguments on the left hand side
     parser = argparse.ArgumentParser(
-        description="The Magic MapRoulette Machine")
+        description="The Magical MapRoulette Machine")
     parser.add_argument(
         "--new",
         help="Create a new challenge? If omitted we will try to update an existing challenge.",

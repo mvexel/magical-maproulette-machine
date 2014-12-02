@@ -1,5 +1,5 @@
-Magic MapRoulette Machine
-=========================
+Magical MapRoulette Machine
+===========================
 
 An interactive Challenge loader script for MapRoulette - create or maintain a challenge with just an Overpass query!
 
@@ -22,14 +22,14 @@ Invoke the Machine with `--help` for more information and some other optional ar
 ```shell
 $ ./mmm.py --help
 
-Hey! This is the Magic MapRoulette Machine.
+Hey! This is the Magical MapRoulette Machine.
 
-It lets you magically create a real MapRoulette challenge
-from an Overpass query. Pretty neat.
+It lets you create a real MapRoulette challenge
+from an Overpass query. Pretty neat. Magical!
 
 usage: mmm.py [-h] [--new] [--v] [--dry-run] [CONFIG_FILE]
 
-The Magic MapRoulette Machine
+The Magical MapRoulette Machine
 
 positional arguments:
   CONFIG_FILE     YAML config file. If omitted, we will use interactive mode.
