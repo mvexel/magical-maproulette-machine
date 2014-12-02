@@ -1,0 +1,10 @@
+challenge:
+  slug: 'motorway-no-lane' # required
+  title: 'NL Motorways without lanes' # required
+  blurb: 'Add lanes to NL motorways' # optional
+  description: 'Add lanes to NL motorways' # optional
+  help: 'Look at the satellite imagery to see if you can add the number of driving lanes to the highlighted ways using the `lanes=*` tag.' # optional
+  instruction: 'Add the number of lanes to this motorway by looking at the satellite imagery' # required
+  difficulty: 1 # required, 1 = easy, 2 = medium, 3 = hard
+overpass_query: 'way(50.5,3.50,53.5,7.30)[highway="motorway"][lanes!~"."];' # required. An overpass query QL stub (without the out statements)
+maproulette_server: 'http://dev.maproulette.org/' # required

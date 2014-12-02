@@ -44,12 +44,13 @@ positional arguments:
   CONFIG_FILE     YAML config file. If omitted, we will use interactive mode.
 
 optional arguments:
-  -h, --help      show this help message and exit
-  --new           Create a new challenge? If omitted we will try to update an
-                  existing challenge.
-  --v, --verbose  Verbose output
-  --dry-run       Do not actually post anything
-```
+  -h, --help         show this help message and exit
+  --new              Create a new challenge? If omitted we will try to update
+                     an existing challenge.
+  --v, --verbose     Verbose output
+  --dry-run          Do not actually post anything
+  --timeout TIMEOUT  API timeout limit in seconds (defaults to 30)
+  ```
 
 Tested with Python 2.7, should work with 3.x also.
 

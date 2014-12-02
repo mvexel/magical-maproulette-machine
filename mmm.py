@@ -20,7 +20,8 @@ config_schema = Schema({
         Required('instruction'): str,
         'difficulty': int},
     Required('overpass_query'): str,
-    Required('maproulette_server'): str
+    Required('maproulette_server'): str,
+    'api_timeout': int
 })
 
 
@@ -42,6 +43,8 @@ interactive = False
 # are we dry-runnning?
 dryrun = False
 
+# API timeout in seconds
+
 config = {
     'challenge': {
         'difficulty': 2,
@@ -52,7 +55,8 @@ config = {
         'blurb': 'Add opening hours to shops and restaurants',
         'help': 'Look up the opening hours on the business web site and add an `opening_hours` tag to the node'},
     'maproulette_server': 'http://dev.maproulette.org/',
-    'overpass_query': 'node(40.5,-112.2,40.8,-111.7)[amenity~"shop|restaurant"][opening_hours!~"."]'}
+    'overpass_query': 'node(40.5,-112.2,40.8,-111.7)[amenity~"shop|restaurant"][opening_hours!~"."]',
+    'api_timeout': 30}
 
 # endpoints
 server = ""
@@ -190,7 +194,7 @@ def get_tasks_from_overpass():
     else:
         overpass_query = config['overpass_query']
 
-    api = overpass.API()
+    api = overpass.API(timeout=config['api_timeout'])
     tasks_geojson = api.get(overpass_query, asGeoJSON=True)
 
     if verbose:
@@ -283,6 +287,7 @@ def main():
     global dryrun
     global verbose
     global interactive
+    global api_timeout
 
     # welcome!
     print("""
@@ -298,7 +303,7 @@ from an Overpass query. Pretty neat. Magical!
     parser.add_argument(
         "--new",
         help="Create a new challenge? If omitted we will try to update an existing challenge.",
-        action="store_false")
+        action="store_true")
     parser.add_argument(
         "--v", "--verbose",
         dest="verbose",
@@ -309,6 +314,10 @@ from an Overpass query. Pretty neat. Magical!
         dest="dryrun",
         help="Do not actually post anything",
         action="store_true")
+    parser.add_argument(
+        "--timeout",
+        help="API timeout limit in seconds (defaults to {})".format(config['api_timeout']),
+        type=int)
     parser.add_argument(
         "config_file",
         help="YAML config file. If omitted, we will use interactive mode.",
@@ -331,6 +340,9 @@ from an Overpass query. Pretty neat. Magical!
     if args.verbose:
         verbose = True
         print("Arguments passed:\n{}".format(args))
+
+    if args.timeout:
+        api_timeout = args.timeout
 
     if args.config_file and os.path.isfile(args.config_file):
         # process the config file
