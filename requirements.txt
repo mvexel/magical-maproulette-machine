@@ -3,3 +3,4 @@ geojson>=1.0.9
 overpass>=0.0.1
 PyYAML>=3.11
 voluptuous>=0.8.6
+clint>=0.4.1

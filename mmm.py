@@ -8,6 +8,7 @@ import yaml
 import argparse
 import os
 from voluptuous import Schema, Required
+from clint.textui import puts, colored
 
 # the schema for the config file
 config_schema = Schema({
@@ -77,15 +78,15 @@ def process_config_file(path):
             except Exception, e:
                 raise e
             if verbose:
-                print("configuration read in: \n {}".format(config))
-        print("Config file read successfully, continuing to post challenge and tasks...\n")
+                puts("configuration read in: \n {}".format(config))
+        puts(colored.green("Config file read successfully, continuing to post challenge and tasks...\n"))
     except Exception:
         raise
     choose_server()
 
 
 def display_help_text():
-    print("""Your query needs to be formulated in Overpass QL.
+    puts("""Your query needs to be formulated in Overpass QL.
 If you are not familiar with this language, head over to the
 Language Guide at http://bit.ly/overpass-ql-guide or the
 Language Reference at http://bit.ly/overpass-ql-ref. To test
@@ -100,16 +101,16 @@ instead. Invoke the Machine with the --h switch to learn more.
 
 
 def prompt(prompt="Press enter to continue", default=None):
-    return raw_input("{} {} --> ".format(
+    return raw_input(colored.yellow("{} {} --> ".format(
         prompt,
         "(Enter for {default})".format(
-            default=default) if default else "")) or default
+            default=default) if default else ""))) or default
 
 
 def get_challenge_meta():
     challenge_defaults = config['challenge']
 
-    print("""
+    puts("""
 OK, first we will need to collect some challenge metadata.
 You can find out more about the meaning of these various bits in the MapRoulette
 Challenge tutorial --> https://gist.github.com/mvexel/b5ad1cb0c91ac245ea3f
@@ -161,11 +162,11 @@ def choose_server():
 
 
 def create_or_update_challenge():
-    print("We will {createorupdate} your challenge {slug}".format(
+    puts("We will {createorupdate} your challenge {slug}".format(
         createorupdate="update" if update else "create",
         slug=config['challenge']['slug']))
     if verbose:
-        print("going to {} at {}".format(("update" if update else "create"), challenge_endpoint))
+        puts("going to {} at {}".format(("update" if update else "create"), challenge_endpoint))
     if update:
         response = requests.put(challenge_endpoint, data=json.dumps(config['challenge']), headers=headers)
     else:
@@ -185,7 +186,7 @@ def get_tasks_from_overpass():
 
     global tasks_geojson
 
-    print("Now let's collect your tasks.")
+    puts("Now let's collect your tasks.")
 
     if interactive:
         overpass_query = prompt(
@@ -198,7 +199,7 @@ def get_tasks_from_overpass():
     tasks_geojson = api.get(overpass_query, asGeoJSON=True)
 
     if verbose:
-        print("GeoJSON returned:\n{}".format(tasks_geojson))
+        puts("GeoJSON returned:\n{}".format(tasks_geojson))
 
     # if the geojson has no features, give the opportunity to retry.
     if not "features" in tasks_geojson:
@@ -208,7 +209,7 @@ def get_tasks_from_overpass():
 
     num_tasks = len(tasks_geojson['features'])
 
-    print("Your query returned {num} tasks.".format(
+    puts("Your query returned {num} tasks.".format(
         num=num_tasks))
     if interactive:
         prompt('Press Enter to continue and post these tasks.')
@@ -218,10 +219,10 @@ def post_tasks():
     """Posts the tasks to the MapRoulette server"""
 
     if update:
-        print("Updating tasks...")
+        puts("Updating tasks...")
         response = requests.put(tasks_endpoint, data=json.dumps(tasks_geojson), headers=headers)
     else:
-        print("Creating tasks...")
+        puts("Creating tasks...")
         response = requests.post(tasks_endpoint, data=json.dumps(tasks_geojson), headers=headers)
     eval_response(response)
     return
@@ -230,7 +231,7 @@ def post_tasks():
 def activate_challenge():
     """Activates the challenge in the MapRoulette server"""
 
-    print("Activating your challenge now...")
+    puts("Activating your challenge now...")
     challenge["active"] = True
     response = requests.put(challenge_endpoint, data=json.dumps(challenge), headers=headers)
     eval_response(response)
@@ -242,11 +243,11 @@ def eval_response(response):
     an error and will cause an exception to be raised."""
 
     if not str(response.status_code).startswith("2"):
-        print("something went wrong with this request and we got an HTTP status code {status_code} back".format(
-            status_code=response.status_code))
+        puts(colored.red("something went wrong with this request and we got an HTTP status code {status_code} back".format(
+            status_code=response.status_code)))
         sys.exit(1)
     else:
-        print("That went A-OK")
+        puts(colored.green("That went A-OK"))
 
 
 def send_to_server():
@@ -267,16 +268,16 @@ def send_to_server():
         # activate the challenge
         activate_challenge()
     else:
-        print("\nThis is where we would post your challenge to MapRoulette, but this is a dry run so we won't.")
+        puts("\nThis is where we would post your challenge to MapRoulette, but this is a dry run so we won't.")
 
 
 def finalize():
     """Outputs a confirmation and goodbye message"""
 
     if not dryrun:
-        print("\nHey that went well!\nYou should now be able to check out your challenge at:\n{url}".format(
+        puts("\nHey that went well!\nYou should now be able to check out your challenge at:\n{url}".format(
             url=urljoin(server, "#t={slug}".format(slug=config['challenge']['slug']))))
-    print("\nAll done!")
+    puts("\nAll done!")
     sys.exit(0)
 
 
@@ -290,7 +291,7 @@ def main():
     global api_timeout
 
     # welcome!
-    print("""
+    puts("""
 Hey! This is the Magical MapRoulette Machine.
 
 It lets you create a real MapRoulette challenge
@@ -339,7 +340,7 @@ from an Overpass query. Pretty neat. Magical!
     # store verbose
     if args.verbose:
         verbose = True
-        print("Arguments passed:\n{}".format(args))
+        puts("Arguments passed:\n{}".format(args))
 
     if args.timeout:
         api_timeout = args.timeout
