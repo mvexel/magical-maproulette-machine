@@ -18,7 +18,7 @@ cd magical-maproulette-machine
 pip install -r requirements.txt
 ```
 
-These are pretty modest but the `overpass` requirement will still fail. This is because I am lazy and have not committed the Overpass Python wrapper to PyPi yet. For now you will need to head to [its project page](https://github.com/mvexel/overpass-api-python-wrapper), clone the repo and `python setup.py install` it.
+Other than those, you will also need the Overpass Python wrapper. This module is not on PyPi yet, so you will need to head to [its project page](https://github.com/mvexel/overpass-api-python-wrapper), clone the repo and `python setup.py install` it.
 
 ## Use it
 
