@@ -157,7 +157,7 @@ def choose_server():
     else:
         server = config.get('maproulette_server')
     challenge_endpoint = urljoin(server, "/api/admin/challenge/{slug}".format(slug=config['challenge']['slug']))
-    tasks_endpoint = urljoin(server, "/api/admin/challenge/{slug}/tasks?geojson".format(slug=config['challenge']['slug']))
+    tasks_endpoint = urljoin(server, "/api/admin/challenge/{slug}/tasksfromgeojson".format(slug=config['challenge']['slug']))
 
 
 def create_or_update_challenge():
@@ -195,7 +195,7 @@ def get_tasks_from_overpass():
         overpass_query = config['overpass_query']
 
     api = overpass.API(timeout=config['api_timeout'])
-    tasks_geojson = api.get(overpass_query, asGeoJSON=True)
+    tasks_geojson = api.Get(overpass_query, asGeoJSON=True)
 
     if verbose:
         print("GeoJSON returned:\n{}".format(tasks_geojson))
