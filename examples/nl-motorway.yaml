@@ -8,3 +8,4 @@ challenge:
   difficulty: 1 # required, 1 = easy, 2 = medium, 3 = hard
 overpass_query: 'way(50.5,3.50,53.5,7.30)[highway="motorway"][lanes!~"."];' # required. An overpass query QL stub (without the out statements)
 maproulette_server: 'http://dev.maproulette.org/' # required
+api_timeout: 120
