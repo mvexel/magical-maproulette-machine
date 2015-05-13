@@ -1,0 +1,11 @@
+challenge:
+  slug: 'ut-nonamerefmainroads' # required
+  title: 'Utah no name main roads' # required
+  blurb: 'Main roads in Utah that have no name or ref' # optional
+  description: 'Please add a name or ref, or change the type to _link' # optional
+  help: 'Primary, secondary and tertiary roads should have at least a `name` or a `ref`. If they do not, they will show up in this challenge. Sometimes, they will need to be named - check the TIGER layer or other sources. In other cases, these ways are really `_link` ways and you should re-tag them as such.' # optional
+  instruction: 'Add a name or ref to this way, or retag to the appropriate `_link` type.' # required
+  difficulty: 2 # required, 1 = easy, 2 = medium, 3 = hard
+overpass_query: 'area[name="Utah"]->.utah;way[highway~"[prim|second|terti]ary$"][name!~".+"][ref!~".+"](area.utah);' # required. An overpass query QL stub (without the out statements)
+maproulette_server: 'http://dev.maproulette.org/' # required
+api_timeout: 120
