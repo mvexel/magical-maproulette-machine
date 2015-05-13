@@ -21,7 +21,7 @@ config_schema = Schema({
         'difficulty': int},
     Required('overpass_query'): str,
     Required('maproulette_server'): str,
-    'api_timeout': int
+    Required('api_timeout'): int
 })
 
 
